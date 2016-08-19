@@ -9,8 +9,14 @@ int STEP_SRCLK = D7;
 boolean dirRegister[8];
 boolean stepRegister[8];
 
-int currentState[6] {0, 0, 0, 0, 0, 0};
-int targetState[6]  {0, 0, 0, 0, 0, 0};
+int currentState[6] = {0, 0, 0, 0, 0, 0};
+int targetState[6]  = {0, 0, 0, 0, 0, 0};
+
+bool newTarget        = false;
+bool activated        = false;
+bool shouldActivate   = false;
+bool shouldDeactivate = false;
+bool shouldMove       = false;
 
 void setup() {
   pinMode(DIR_SER,    OUTPUT);
@@ -25,9 +31,11 @@ void setup() {
 }
 
 int trigger(String command) {
+  newTarget = true;
+
   if (targetState[0] == 0) {
     for (int i = 0; i < 6; i++) {
-      targetState[i] = 1000;
+      targetState[i] = (i + 1) * 300;
     }
   } else {
     for (int i = 0; i < 6; i++) {
@@ -39,9 +47,41 @@ int trigger(String command) {
 }
 
 void loop() {
+  determineState();
+  display();
+}
+
+void determineState() {
   if (targetDifferent()) {
-    moveTowardsTarget();
+    shouldMove = true;
+
+    if (newTarget) {
+      newTarget      = false;
+      shouldActivate = true;
+      activated      = true;
+    }
   } else {
+    if (activated) {
+      activated        = false;
+      shouldDeactivate = true;
+    }
+  }
+}
+
+void display() {
+  if (shouldActivate) {
+    shouldActivate = false;
+    activateSteppers();
+    determineDirections();
+  }
+
+  if (shouldMove) {
+    shouldMove = false;
+    moveTowardsTarget();
+  }
+
+  if (shouldDeactivate) {
+    shouldDeactivate = false;
     deactivateSteppers();
   }
 }
@@ -56,62 +96,33 @@ bool targetDifferent() {
   return false;
 }
 
-void moveTowardsTarget() {
-  activateSteppers();
-
+void determineDirections() {
   for (int i = 0; i < 6; i++) {
     if (currentState[i] != targetState[i]) {
-      bool direction = currentState[i] < targetState[i];
-      if (direction == true) {
-        currentState[i] = currentState[i] + 1;
+      setDir(i, currentState[i] < targetState[i]);
+    }
+  }
+
+  writeDirRegister();
+}
+
+void moveTowardsTarget() {
+  for (int i = 0; i < 6; i++) {
+    if (currentState[i] != targetState[i]) {
+      if (currentState[i] < targetState[i]) {
+        currentState[i] += 1;
       } else {
-        currentState[i] = currentState[i] - 1;
+        currentState[i] -= 1;
       }
-      setDir(i, direction);
+
       setStep(i, HIGH);
     } else {
       setStep(i, LOW);
     }
   }
 
-  writeDirRegister();
   writeStepRegister();
 }
-
-// void run(int direction) {
-//   activateSteppers();
-//
-//   setDir(0, direction);
-//   setDir(1, direction);
-//   setDir(2, direction);
-//   setDir(3, direction);
-//   setDir(4, direction);
-//   setDir(5, direction);
-//   writeDirRegister();
-//
-//   for (int i = 0; i < 1000; i++) {
-//     setStep(0, HIGH);
-//     setStep(1, HIGH);
-//     setStep(2, HIGH);
-//     setStep(3, HIGH);
-//     setStep(4, HIGH);
-//     setStep(5, HIGH);
-//     writeStepRegister();
-//     delayMicroseconds(400);
-//
-//     setStep(0, LOW);
-//     setStep(1, LOW);
-//     setStep(2, LOW);
-//     setStep(3, LOW);
-//     setStep(4, LOW);
-//     setStep(5, LOW);
-//     writeStepRegister();
-//     delayMicroseconds(400);
-//   }
-//
-//   deactivateSteppers();
-// }
-
 
 void activateSteppers() {
   setDir(6, HIGH);
