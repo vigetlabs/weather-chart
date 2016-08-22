@@ -9,6 +9,8 @@ int STEP_SRCLK = D7;
 boolean dirRegister[8];
 boolean stepRegister[8];
 
+bool calibrated[6] = {false, false, false, false, false, false};
+
 int currentState[6] = {0, 0, 0, 0, 0, 0};
 int targetState[6]  = {0, 0, 0, 0, 0, 0};
 
@@ -19,6 +21,8 @@ bool shouldDeactivate = false;
 bool shouldMove       = false;
 
 void setup() {
+  Serial.begin(9600);
+
   pinMode(DIR_SER,    OUTPUT);
   pinMode(DIR_RCLK,   OUTPUT);
   pinMode(DIR_SRCLK,  OUTPUT);
@@ -27,23 +31,86 @@ void setup() {
   pinMode(STEP_RCLK,  OUTPUT);
   pinMode(STEP_SRCLK, OUTPUT);
 
+  pinMode(A0, INPUT_PULLDOWN);
+  pinMode(A1, INPUT_PULLDOWN);
+  pinMode(A2, INPUT_PULLDOWN);
+  pinMode(A3, INPUT_PULLDOWN);
+  pinMode(A4, INPUT_PULLDOWN);
+  pinMode(A5, INPUT_PULLDOWN);
+
   Particle.function("trigger", trigger);
+
+  calibrate();
 }
 
-int trigger(String command) {
-  newTarget = true;
+void calibrate() {
+  activateSteppers();
 
-  if (targetState[0] == 0) {
+  while(uncalibrated()) {
     for (int i = 0; i < 6; i++) {
-      targetState[i] = (i + 1) * 300;
+      if (!calibrated[i]) {
+        if (buttonPressed(i)) {
+          calibrated[i]   = true;
+          currentState[i] = 0;
+          targetState[i]  = 50;
+        } else {
+          targetState[i] -= 1;
+        }
+      }
     }
-  } else {
-    for (int i = 0; i < 6; i++) {
-      targetState[i] = 0;
-    }
+
+    determineDirections();
+    moveTowardsTarget();
+  }
+}
+
+bool uncalibrated() {
+  for (int i = 0; i < 6; i++) {
+    if (!calibrated[i]) return true;
   }
 
-  return 1;
+  return false;
+}
+
+bool buttonPressed(int i) {
+  return digitalRead(A0 + i);
+}
+
+int trigger(String input) {
+  newTarget = true;
+
+  int checksum  = 0;
+  int index     = 0;
+  int lastIndex = 0;
+  int value;
+
+  for (int i = 0; i < 6; i++) {
+    int index = input.indexOf(",", lastIndex);
+
+    if (index == -1) {
+      if (i != 5) {
+        setTargetToCurrent();
+        return -1;
+      }
+      index = input.length();
+    }
+
+    value           = atoi(input.substring(lastIndex, index));
+    value           = max(0,   value);
+    value           = min(100, value);
+    targetState[i]  = map(value, 0, 100, 0, 4450);
+    checksum       += value;
+
+    lastIndex = index + 1;
+  }
+
+  return checksum;
+}
+
+void setTargetToCurrent() {
+  for (int i = 0; i < 6; i++) {
+    targetState[i] = currentState[i];
+  }
 }
 
 void loop() {
@@ -52,17 +119,21 @@ void loop() {
 }
 
 void determineState() {
+  for (int i = 0; i < 6; i++) {
+    if (buttonPressed(i)) {
+      currentState[i] = 0;
+    }
+  }
+
   if (targetDifferent()) {
     shouldMove = true;
 
     if (newTarget) {
       newTarget      = false;
       shouldActivate = true;
-      activated      = true;
     }
   } else {
     if (activated) {
-      activated        = false;
       shouldDeactivate = true;
     }
   }
@@ -99,7 +170,7 @@ bool targetDifferent() {
 void determineDirections() {
   for (int i = 0; i < 6; i++) {
     if (currentState[i] != targetState[i]) {
-      setDir(i, currentState[i] < targetState[i]);
+      setDir(i, currentState[i] > targetState[i]);
     }
   }
 
@@ -125,11 +196,15 @@ void moveTowardsTarget() {
 }
 
 void activateSteppers() {
+  activated = true;
+
   setDir(6, HIGH);
   writeDirRegister();
 }
 
 void deactivateSteppers() {
+  activated = false;
+
   setDir(6, LOW);
   writeDirRegister();
 }
@@ -162,7 +237,7 @@ void writeStepRegister() {
     digitalWrite(STEP_SRCLK, HIGH);
   }
   digitalWrite(STEP_RCLK, HIGH);
-  delayMicroseconds(400);
+  delayMicroseconds(1400);
 
   // Write out LOW
   digitalWrite(STEP_RCLK, LOW);
@@ -172,5 +247,5 @@ void writeStepRegister() {
     digitalWrite(STEP_SRCLK, HIGH);
   }
   digitalWrite(STEP_RCLK, HIGH);
-  delayMicroseconds(400);
+  delayMicroseconds(1400);
 }
