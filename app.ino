@@ -198,14 +198,14 @@ void moveTowardsTarget() {
 void activateSteppers() {
   activated = true;
 
-  setDir(6, HIGH);
+  setDir(7, HIGH);
   writeDirRegister();
 }
 
 void deactivateSteppers() {
   activated = false;
 
-  setDir(6, LOW);
+  setDir(7, LOW);
   writeDirRegister();
 }
 
