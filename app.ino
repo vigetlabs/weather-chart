@@ -40,6 +40,7 @@ void setup() {
 
   Particle.function("trigger", trigger);
 
+  deactivateSteppers();
   calibrate();
 }
 
