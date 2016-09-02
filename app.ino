@@ -1,3 +1,15 @@
+#include "neopixel/neopixel.h"
+#include "math.h"
+
+int LED_PIN   = D0;
+int LED_COUNT = 149;
+
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(LED_COUNT, LED_PIN, WS2812B);
+
+int  lastLed        = 0;
+int  currentLastLed = 0;
+bool shouldShowLeds = false;
+
 int DIR_SER   = D2;
 int DIR_RCLK  = D3;
 int DIR_SRCLK = D4;
@@ -22,6 +34,10 @@ bool shouldMove       = false;
 
 void setup() {
   Serial.begin(9600);
+
+  strip.begin();
+  strip.setBrightness(255);
+  strip.show();
 
   pinMode(DIR_SER,    OUTPUT);
   pinMode(DIR_RCLK,   OUTPUT);
@@ -126,6 +142,12 @@ void determineState() {
     }
   }
 
+  lastLed = calculateLastLed();
+  if (lastLed != currentLastLed) {
+    currentLastLed = lastLed;
+    shouldShowLeds = true;
+  }
+
   if (targetDifferent()) {
     shouldMove = true;
 
@@ -152,10 +174,45 @@ void display() {
     moveTowardsTarget();
   }
 
+  if (shouldShowLeds) {
+    shouldShowLeds = false;
+    showLeds();
+  }
+
   if (shouldDeactivate) {
     shouldDeactivate = false;
     deactivateSteppers();
   }
+}
+
+int calculateLastLed() {
+  float tracker = 0;
+
+  for (int i = 0; i < 5; i++) {
+    int x = map(currentState[i],   0, 4450, 0, 100);
+    int y = map(currentState[i+1], 0, 4450, 0, 100);
+
+    float gap = pow(144 + (0.0441 * pow(x - y, 2)), 0.5);
+    tracker += gap;
+  }
+
+  return round(tracker);
+}
+
+void showLeds() {
+  int ledIndex = LED_COUNT - lastLed;
+
+  for (int i = 0; i < LED_COUNT; i++) {
+    if (i < ledIndex) {
+      strip.setPixelColor(i, 0, 0, 0);
+    } else if (i == ledIndex) {
+      strip.setPixelColor(i, 255, 0, 0);
+    } else {
+      strip.setPixelColor(i, 0, 100, 100);
+    }
+  }
+
+  strip.show();
 }
 
 bool targetDifferent() {
