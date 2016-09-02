@@ -2,13 +2,16 @@
 #include "math.h"
 
 int LED_PIN   = D0;
-int LED_COUNT = 149;
+int LED_COUNT = 150;
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(LED_COUNT, LED_PIN, WS2812B);
 
 int  lastLed        = 0;
 int  currentLastLed = 0;
 bool shouldShowLeds = false;
+
+int currentLedState[6] = {0, 0, 0, 0, 0, 0};
+int targetLedState[6]  = {0, 0, 0, 0, 0, 0};
 
 int DIR_SER   = D2;
 int DIR_RCLK  = D3;
@@ -142,9 +145,8 @@ void determineState() {
     }
   }
 
-  lastLed = calculateLastLed();
-  if (lastLed != currentLastLed) {
-    currentLastLed = lastLed;
+  calculateLedPositions();
+  if (ledsDifferent()) {
     shouldShowLeds = true;
   }
 
@@ -185,31 +187,47 @@ void display() {
   }
 }
 
-int calculateLastLed() {
-  float tracker = 0;
+bool ledsDifferent() {
+  for (int i = 0; i < 6; i++) {
+    if (currentLedState[i] != targetLedState[i]) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+
+void calculateLedPositions() {
+  float tracker = 1.5;
 
   for (int i = 0; i < 5; i++) {
     int x = map(currentState[i],   0, 4450, 0, 100);
     int y = map(currentState[i+1], 0, 4450, 0, 100);
 
     float gap = pow(144 + (0.0441 * pow(x - y, 2)), 0.5);
+    targetLedState[i] = tracker;
+
     tracker += gap;
   }
 
-  return round(tracker);
+  targetLedState[5] = tracker;
 }
 
 void showLeds() {
   int ledIndex = LED_COUNT - lastLed;
 
-  for (int i = 0; i < LED_COUNT; i++) {
-    if (i < ledIndex) {
+  for (int i = LED_COUNT; i > 0; i--) {
+    if (i < LED_COUNT - targetLedState[5]) {
       strip.setPixelColor(i, 0, 0, 0);
-    } else if (i == ledIndex) {
-      strip.setPixelColor(i, 255, 0, 0);
     } else {
       strip.setPixelColor(i, 0, 100, 100);
     }
+  }
+
+  for (int i = 0; i < 6; i++) {
+    strip.setPixelColor(LED_COUNT - targetLedState[i], 255, 0, 0);
+    currentLedState[i] = targetLedState[i];
   }
 
   strip.show();
