@@ -1,6 +1,8 @@
 #include "neopixel/neopixel.h"
 #include "math.h"
 
+bool rainbowMode = false;
+
 int LED_PIN   = D0;
 int LED_COUNT = 150;
 
@@ -58,9 +60,20 @@ void setup() {
   pinMode(A5, INPUT_PULLDOWN);
 
   Particle.function("trigger", trigger);
+  Particle.function("rainbow", rainbow);
 
   deactivateSteppers();
   calibrate();
+}
+
+int rainbow(String command) {
+  rainbowMode = !rainbowMode;
+
+  if (rainbowMode) {
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
 void calibrate() {
@@ -139,6 +152,8 @@ void loop() {
 }
 
 void determineState() {
+  if (rainbowMode) return;
+
   for (int i = 0; i < 6; i++) {
     if (buttonPressed(i)) {
       currentState[i] = 0;
@@ -165,6 +180,11 @@ void determineState() {
 }
 
 void display() {
+  if (rainbowMode) {
+    runRainbow(50);
+    return;
+  }
+
   if (shouldActivate) {
     shouldActivate = false;
     activateSteppers();
@@ -324,4 +344,29 @@ void writeStepRegister() {
   }
   digitalWrite(STEP_RCLK, HIGH);
   delayMicroseconds(1400);
+}
+
+void runRainbow(uint8_t wait) {
+  uint16_t i, j;
+  int length = currentLedState[5];
+
+  for(j = 0; j < length; j++) {
+    for(i = LED_COUNT; i >= LED_COUNT - length ; i--) {
+      byte position = map((i+j) % length, 0, length, 0, 255);
+      uint32_t color;
+
+      if(position < 85) {
+        color = strip.Color(position * 3, 255 - position * 3, 0);
+      } else if(position < 170) {
+        position -= 85;
+        color = strip.Color(255 - position * 3, 0, position * 3);
+      } else {
+        position -= 170;
+        color = strip.Color(0, position * 3, 255 - position * 3);
+      }
+      strip.setPixelColor(i, color);
+    }
+    strip.show();
+    delay(wait);
+  }
 }
