@@ -36,11 +36,17 @@ int LedStrip::addEffect(String input) {
     lastIndex = index + 1;
   }
 
-  Effect newEffect       = Effect(info[0], info[1], info[2], info[3], info[4], info[5]);
-  _effects[_effectCount] = newEffect;
+  _effects[_effectCount].update(info[0], info[1], info[2], info[3], info[4], info[5]);
   _effectCount           = (_effectCount + 1) % EFFECT_COUNT;
 
   return checksum;
+}
+
+void LedStrip::clearEffects() {
+  for (int i = 0; i < EFFECT_COUNT; i++) {
+    _effects[i].deactivate();
+    _effectCount = 0;
+  }
 }
 
 void LedStrip::updatePositions(int stepperState[]) {
@@ -60,16 +66,14 @@ void LedStrip::updatePositions(int stepperState[]) {
 }
 
 void LedStrip::updateState() {
-  for (int i = 0; i < LED_COUNT; i++) {
-    if (i < _positions[5]) {
-      _targetState[i] = _strip.Color(0, 100, 100);
-    } else {
-      _targetState[i] = _strip.Color(0, 0, 0);
-    }
+  for (size_t i = 0; i < LED_COUNT; i++) {
+    _targetState[i] = 0;
   }
 
-  for (int i = 0; i < 6; i++) {
-    _targetState[_positions[i]] = _strip.Color(255, 0, 0);
+  for (int i = 0; i < EFFECT_COUNT; i++) {
+    if (_effects[i]._active) {
+      _layerOnEffect(i);
+    }
   }
 }
 
@@ -92,4 +96,31 @@ bool LedStrip::_shouldChangeLeds() {
   }
 
   return false;
+}
+
+void LedStrip::_layerOnEffect(int i) {
+  Effect effect = _effects[i];
+
+  switch (effect._style) {
+    case 0:
+      for (int j = _ledIndexFor(effect._position); j < _ledIndexFor(effect._position + effect._length); j++) {
+        _targetState[j] = _strip.Color(effect._r, effect._g, effect._b);
+      }
+
+    default:
+      break;
+  }
+}
+
+int LedStrip::_ledIndexFor(int position) {
+  position = max(0, position);
+  position = min(position, 100);
+
+  for (int i = 0; i < 5; i++) {
+    if (position <= ((i + 1) * 20)) {
+      return map(position, i * 20, (i + 1) * 20, _positions[i], _positions[i + 1]);
+    }
+  }
+
+  return _positions[5];
 }

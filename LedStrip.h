@@ -17,6 +17,7 @@ class LedStrip
     LedStrip(int stepCount);
     void initialize();
     int  addEffect(String input);
+    void clearEffects();
     void updatePositions(int stepperState[]);
     void updateState();
     void show();
@@ -32,6 +33,8 @@ class LedStrip
     uint32_t _targetState[LED_COUNT];
 
     bool _shouldChangeLeds();
+    void _layerOnEffect(int i);
+    int  _ledIndexFor(int position);
 };
 
 #endif

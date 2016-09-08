@@ -4,8 +4,10 @@ Effect::Effect() {
   _active = false;
 }
 
-Effect::Effect(int position, int length, int r, int g, int b, int style) {
-  _active   = true;
+void Effect::update(int position, int length, int r, int g, int b, int style) {
+  _active    = true;
+  _startTime = millis();
+
   _position = position;
   _length   = length;
   _r        = r;

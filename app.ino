@@ -57,6 +57,7 @@ void setup() {
 
   Particle.function("trigger", trigger);
   Particle.function("addEffect", addEffect);
+  Particle.function("clear", clearEffects);
 
   deactivateSteppers();
   calibrate();
@@ -131,6 +132,12 @@ int trigger(String input) {
 
 int addEffect(String input) {
   return lights.addEffect(input);
+}
+
+int clearEffects(String input) {
+  lights.clearEffects();
+
+  return 1;
 }
 
 void loop() {

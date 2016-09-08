@@ -7,9 +7,12 @@ class Effect
 {
   public:
     Effect();
-    Effect(int position, int length, int r, int g, int b, int style);
+
+    void update(int position, int length, int r, int g, int b, int style);
 
     bool _active;
+    long _startTime;
+
     int  _position;
     int  _length;
     int  _r;
