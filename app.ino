@@ -1,14 +1,15 @@
 #include "neopixel/neopixel.h"
 #include "math.h"
 
+#define STEP_COUNT (4450 * 4)
+
 bool rainbowMode = false;
 
 int LED_PIN   = D0;
-int LED_COUNT = 150;
+int LED_COUNT = 149;
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(LED_COUNT, LED_PIN, WS2812B);
 
-int  lastLed        = 0;
 int  currentLastLed = 0;
 bool shouldShowLeds = false;
 
@@ -85,7 +86,7 @@ void calibrate() {
         if (buttonPressed(i)) {
           calibrated[i]   = true;
           currentState[i] = 0;
-          targetState[i]  = 50;
+          targetState[i]  = map(5, 0, 100, 0, STEP_COUNT);
         } else {
           targetState[i] -= 1;
         }
@@ -131,7 +132,7 @@ int trigger(String input) {
     value           = atoi(input.substring(lastIndex, index));
     value           = max(0,   value);
     value           = min(100, value);
-    targetState[i]  = map(value, 0, 100, 0, 4450);
+    targetState[i]  = map(value, 0, 100, 0, STEP_COUNT);
     checksum       += value;
 
     lastIndex = index + 1;
@@ -219,11 +220,11 @@ bool ledsDifferent() {
 
 
 void calculateLedPositions() {
-  float tracker = 1.5;
+  float tracker = 0.5;
 
   for (int i = 0; i < 5; i++) {
-    int x = map(currentState[i],   0, 4450, 0, 100);
-    int y = map(currentState[i+1], 0, 4450, 0, 100);
+    int x = map(currentState[i],   0, STEP_COUNT, 0, 100);
+    int y = map(currentState[i+1], 0, STEP_COUNT, 0, 100);
 
     float gap = pow(144 + (0.0441 * pow(x - y, 2)), 0.5);
     targetLedState[i] = tracker;
@@ -235,10 +236,8 @@ void calculateLedPositions() {
 }
 
 void showLeds() {
-  int ledIndex = LED_COUNT - lastLed;
-
-  for (int i = LED_COUNT; i > 0; i--) {
-    if (i < LED_COUNT - targetLedState[5]) {
+  for (int i = 0; i < LED_COUNT; i++) {
+    if (i > targetLedState[5]) {
       strip.setPixelColor(i, 0, 0, 0);
     } else {
       strip.setPixelColor(i, 0, 100, 100);
@@ -246,7 +245,7 @@ void showLeds() {
   }
 
   for (int i = 0; i < 6; i++) {
-    strip.setPixelColor(LED_COUNT - targetLedState[i], 255, 0, 0);
+    strip.setPixelColor(targetLedState[i], 255, 0, 0);
     currentLedState[i] = targetLedState[i];
   }
 
@@ -333,7 +332,6 @@ void writeStepRegister() {
     digitalWrite(STEP_SRCLK, HIGH);
   }
   digitalWrite(STEP_RCLK, HIGH);
-  delayMicroseconds(1400);
 
   // Write out LOW
   digitalWrite(STEP_RCLK, LOW);
@@ -343,7 +341,6 @@ void writeStepRegister() {
     digitalWrite(STEP_SRCLK, HIGH);
   }
   digitalWrite(STEP_RCLK, HIGH);
-  delayMicroseconds(1400);
 }
 
 void runRainbow(uint8_t wait) {
