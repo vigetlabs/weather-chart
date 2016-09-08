@@ -1,5 +1,8 @@
 #include "LedStrip.h"
 
+// Don't need this here but Particle IDE complains if it's not here.
+#include "Effect.h"
+
 #define STEP_COUNT (4450 * 4)
 
 LedStrip lights = LedStrip(STEP_COUNT);
@@ -53,6 +56,7 @@ void setup() {
   pinMode(A5, INPUT_PULLDOWN);
 
   Particle.function("trigger", trigger);
+  Particle.function("addEffect", addEffect);
 
   deactivateSteppers();
   calibrate();
@@ -123,6 +127,10 @@ int trigger(String input) {
   }
 
   return checksum;
+}
+
+int addEffect(String input) {
+  return lights.addEffect(input);
 }
 
 void loop() {

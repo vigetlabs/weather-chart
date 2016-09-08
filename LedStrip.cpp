@@ -12,6 +12,37 @@ void LedStrip::initialize() {
   _strip.show();
 }
 
+int LedStrip::addEffect(String input) {
+  int checksum  = 0;
+  int index     = 0;
+  int lastIndex = 0;
+  int value;
+  int info[6];
+
+  for (int i = 0; i < 6; i++) {
+    index = input.indexOf(",", lastIndex);
+
+    if (index == -1) {
+      if (i != 5) {
+        return -1;
+      }
+      index = input.length();
+    }
+
+    value     = atoi(input.substring(lastIndex, index));
+    info[i]   = value;
+    checksum += value;
+
+    lastIndex = index + 1;
+  }
+
+  Effect newEffect       = Effect(info[0], info[1], info[2], info[3], info[4], info[5]);
+  _effects[_effectCount] = newEffect;
+  _effectCount           = (_effectCount + 1) % EFFECT_COUNT;
+
+  return checksum;
+}
+
 void LedStrip::updatePositions(int stepperState[]) {
   float tracker = 0.5;
 
