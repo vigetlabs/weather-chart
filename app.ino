@@ -1,14 +1,8 @@
-#include "neopixel/neopixel.h"
-#include "math.h"
+#include "LedStrip.h"
 
 #define STEP_COUNT (4450 * 4)
 
-bool rainbowMode = false;
-
-int LED_PIN   = D0;
-int LED_COUNT = 149;
-
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(LED_COUNT, LED_PIN, WS2812B);
+LedStrip lights = LedStrip(STEP_COUNT);
 
 int  currentLastLed = 0;
 bool shouldShowLeds = false;
@@ -41,9 +35,7 @@ bool shouldMove       = false;
 void setup() {
   Serial.begin(9600);
 
-  strip.begin();
-  strip.setBrightness(255);
-  strip.show();
+  lights.initialize();
 
   pinMode(DIR_SER,    OUTPUT);
   pinMode(DIR_RCLK,   OUTPUT);
@@ -61,20 +53,9 @@ void setup() {
   pinMode(A5, INPUT_PULLDOWN);
 
   Particle.function("trigger", trigger);
-  Particle.function("rainbow", rainbow);
 
   deactivateSteppers();
   calibrate();
-}
-
-int rainbow(String command) {
-  rainbowMode = !rainbowMode;
-
-  if (rainbowMode) {
-    return 1;
-  } else {
-    return 0;
-  }
 }
 
 void calibrate() {
@@ -123,7 +104,10 @@ int trigger(String input) {
 
     if (index == -1) {
       if (i != 5) {
-        setTargetToCurrent();
+        // abandon ship; reset target state to current state
+        for (int i = 0; i < 6; i++) {
+          targetState[i] = currentState[i];
+        }
         return -1;
       }
       index = input.length();
@@ -141,29 +125,16 @@ int trigger(String input) {
   return checksum;
 }
 
-void setTargetToCurrent() {
-  for (int i = 0; i < 6; i++) {
-    targetState[i] = currentState[i];
-  }
-}
-
 void loop() {
   determineState();
   display();
 }
 
 void determineState() {
-  if (rainbowMode) return;
-
   for (int i = 0; i < 6; i++) {
     if (buttonPressed(i)) {
       currentState[i] = 0;
     }
-  }
-
-  calculateLedPositions();
-  if (ledsDifferent()) {
-    shouldShowLeds = true;
   }
 
   if (targetDifferent()) {
@@ -178,14 +149,12 @@ void determineState() {
       shouldDeactivate = true;
     }
   }
+
+  lights.updatePositions(currentState);
+  lights.updateState();
 }
 
 void display() {
-  if (rainbowMode) {
-    runRainbow(50);
-    return;
-  }
-
   if (shouldActivate) {
     shouldActivate = false;
     activateSteppers();
@@ -197,59 +166,12 @@ void display() {
     moveTowardsTarget();
   }
 
-  if (shouldShowLeds) {
-    shouldShowLeds = false;
-    showLeds();
-  }
-
   if (shouldDeactivate) {
     shouldDeactivate = false;
     deactivateSteppers();
   }
-}
 
-bool ledsDifferent() {
-  for (int i = 0; i < 6; i++) {
-    if (currentLedState[i] != targetLedState[i]) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-
-void calculateLedPositions() {
-  float tracker = 0.5;
-
-  for (int i = 0; i < 5; i++) {
-    int x = map(currentState[i],   0, STEP_COUNT, 0, 100);
-    int y = map(currentState[i+1], 0, STEP_COUNT, 0, 100);
-
-    float gap = pow(144 + (0.0441 * pow(x - y, 2)), 0.5);
-    targetLedState[i] = tracker;
-
-    tracker += gap;
-  }
-
-  targetLedState[5] = tracker;
-}
-
-void showLeds() {
-  for (int i = 0; i < LED_COUNT; i++) {
-    if (i > targetLedState[5]) {
-      strip.setPixelColor(i, 0, 0, 0);
-    } else {
-      strip.setPixelColor(i, 0, 100, 100);
-    }
-  }
-
-  for (int i = 0; i < 6; i++) {
-    strip.setPixelColor(targetLedState[i], 255, 0, 0);
-    currentLedState[i] = targetLedState[i];
-  }
-
-  strip.show();
+  lights.show();
 }
 
 bool targetDifferent() {
@@ -341,29 +263,4 @@ void writeStepRegister() {
     digitalWrite(STEP_SRCLK, HIGH);
   }
   digitalWrite(STEP_RCLK, HIGH);
-}
-
-void runRainbow(uint8_t wait) {
-  uint16_t i, j;
-  int length = currentLedState[5];
-
-  for(j = 0; j < length; j++) {
-    for(i = LED_COUNT; i >= LED_COUNT - length ; i--) {
-      byte position = map((i+j) % length, 0, length, 0, 255);
-      uint32_t color;
-
-      if(position < 85) {
-        color = strip.Color(position * 3, 255 - position * 3, 0);
-      } else if(position < 170) {
-        position -= 85;
-        color = strip.Color(255 - position * 3, 0, position * 3);
-      } else {
-        position -= 170;
-        color = strip.Color(0, position * 3, 255 - position * 3);
-      }
-      strip.setPixelColor(i, color);
-    }
-    strip.show();
-    delay(wait);
-  }
 }
