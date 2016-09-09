@@ -100,12 +100,45 @@ bool LedStrip::_shouldChangeLeds() {
 
 void LedStrip::_layerOnEffect(int i) {
   Effect effect = _effects[i];
+  long timeElapsed;
+  int  index;
 
   switch (effect._style) {
     case 0:
-      for (int j = _ledIndexFor(effect._position); j < _ledIndexFor(effect._position + effect._length); j++) {
+      // Solid
+      for (int j = _ledIndexFor(effect._start); j < _ledIndexFor(effect._end); j++) {
         _targetState[j] = _strip.Color(effect._r, effect._g, effect._b);
       }
+      break;
+
+    case 1:
+      // Ants marching
+      timeElapsed = millis() - effect._startTime;
+      // 200: how quick the ants march (lower number = faster marching), 3: ant spacing
+      index = (timeElapsed / 200) % 3;
+
+      for (int j = _ledIndexFor(effect._start); j < _ledIndexFor(effect._end); j++) {
+        if ((j % 3) == index) {
+          _targetState[j] = _strip.Color(effect._r, effect._g, effect._b);
+        }
+      }
+      break;
+
+    case 2:
+      // Breathing
+      timeElapsed = millis() - effect._startTime;
+      index       = (timeElapsed / 75) % 40; // 40 steps & 2 seconds per revolution
+      float multiplier;
+      if (index < 20) {
+        multiplier = map(index, 0, 20, 5, 100) / 100.0;
+      } else {
+        multiplier = map(index, 20, 40, 100, 5) / 100.0;
+      }
+
+      for (int j = _ledIndexFor(effect._start); j < _ledIndexFor(effect._end); j++) {
+        _targetState[j] = _strip.Color(effect._r * multiplier, effect._g * multiplier, effect._b * multiplier);
+      }
+      break;
 
     default:
       break;
