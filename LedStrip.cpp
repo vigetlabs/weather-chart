@@ -103,8 +103,35 @@ void LedStrip::_layerOnEffect(int i) {
 
   switch (effect._style) {
     case 0:
-      for (int j = _ledIndexFor(effect._position); j < _ledIndexFor(effect._position + effect._length); j++) {
+      // Solid
+      for (int j = _ledIndexFor(effect._start); j < _ledIndexFor(effect._end); j++) {
         _targetState[j] = _strip.Color(effect._r, effect._g, effect._b);
+      }
+
+    case 1:
+      // Ants marching
+      long timeElapsed = millis - effect._startTime;
+      int  index       = (timeElapsed / 500) % 3; // two ant steps per second
+
+      for (int j = _ledIndexFor(effect._start); j < _ledIndexFor(effect._end); j++) {
+        if ((j % 3) == index) {
+          _targetState[j] = _strip.Color(effect._r, effect._g, effect._b);
+        }
+      }
+
+    case 2:
+      // Breathing
+      long timeElapsed = millis - effect._startTime;
+      int  index       = (timeElapsed / 50) % 40; // 40 steps & 2 seconds per revolution
+      float multiplier;
+      if (index < 20) {
+        multiplier = map(index, 0, 20, 0, 100) / 100.0;
+      } else {
+        multiplier = map(index, 20, 40, 100, 0) / 100.0;
+      }
+
+      for (int j = _ledIndexFor(effect._start); j < _ledIndexFor(effect._end); j++) {
+        _targetState[j] = _strip.Color(effect._r * multipler, effect._g * multipler, effect._b * multipler);
       }
 
     default:
