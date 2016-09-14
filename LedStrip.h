@@ -17,14 +17,16 @@ class LedStrip
     LedStrip(int stepCount);
     void initialize();
     int  addEffect(String input);
+    int  temperature(String input);
     void clearEffects();
     void updatePositions(int stepperState[]);
     void updateState();
     void show();
 
   private:
-    int _stepCount    = 0;
-    int _positions[6] = {0, 0, 0, 0, 0, 0};
+    int _stepCount       = 0;
+    int _positions[6]    = {0, 0, 0, 0, 0, 0};
+    int _temperatures[6] = {0, 0, 0, 0, 0, 0};
 
     Effect _effects[EFFECT_COUNT];
     int _effectCount = 0;
@@ -33,8 +35,11 @@ class LedStrip
     uint32_t _targetState[LED_COUNT];
 
     bool _shouldChangeLeds();
+    void _calculateTemperature(int i);
+    uint32_t _tempToColor(int temperature);
     void _layerOnEffect(int i);
     int  _ledIndexFor(int position);
+    int  _segmentFor(int led);
 };
 
 #endif

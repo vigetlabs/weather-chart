@@ -42,6 +42,32 @@ int LedStrip::addEffect(String input) {
   return checksum;
 }
 
+int LedStrip::temperature(String input) {
+  int checksum  = 0;
+  int index     = 0;
+  int lastIndex = 0;
+  int value;
+
+  for (int i = 0; i < 6; i++) {
+    index = input.indexOf(",", lastIndex);
+
+    if (index == -1) {
+      if (i != 5) {
+        return -1;
+      }
+      index = input.length();
+    }
+
+    value             = atoi(input.substring(lastIndex, index));
+    _temperatures[i]  = value;
+    checksum         += value;
+
+    lastIndex = index + 1;
+  }
+
+  return checksum;
+}
+
 void LedStrip::clearEffects() {
   for (int i = 0; i < EFFECT_COUNT; i++) {
     _effects[i].deactivate();
@@ -68,6 +94,10 @@ void LedStrip::updatePositions(int stepperState[]) {
 void LedStrip::updateState() {
   for (size_t i = 0; i < LED_COUNT; i++) {
     _targetState[i] = 0;
+
+    if (i <= _positions[5]) {
+      _calculateTemperature(i);
+    }
   }
 
   for (int i = 0; i < EFFECT_COUNT; i++) {
@@ -96,6 +126,68 @@ bool LedStrip::_shouldChangeLeds() {
   }
 
   return false;
+}
+
+void LedStrip::_calculateTemperature(int led) {
+  int segment = _segmentFor(led);
+
+  int ledTemperature = map(led,
+    _positions[segment],
+    _positions[segment + 1],
+    _temperatures[segment],
+    _temperatures[segment + 1]
+  );
+
+  _targetState[led] = _tempToColor(ledTemperature);
+}
+
+int LedStrip::_segmentFor(int led) {
+  for (int i = 1; i < 6; i++) {
+    if (led <= _positions[i]) {
+      return i - 1;
+    }
+  }
+
+  return 5;
+}
+
+uint32_t LedStrip::_tempToColor(int temperature) {
+  int r, g, b;
+
+  // -40 : violet
+  // 50  : purple
+  // 60  : blue
+  // 70  : green
+  // 75  : yellow
+  // 80+ : red
+
+  if (temperature <= 40) {
+    r = 255;
+    g = 0;
+    b = 150;
+  } else if (temperature <= 50) {
+    r = 255;
+    g = 0;
+    b = map(temperature, 40, 50, 150, 255);
+  } else if (temperature <= 60) {
+    r = map(temperature, 40, 60, 255, 0);
+    g = 0;
+    b = 255;
+  } else if (temperature <= 70) {
+    r = 0;
+    g = map(temperature, 50, 70, 0, 255);
+    b = map(temperature, 50, 70, 255, 0);
+  } else if (temperature <= 75) {
+    r = map(temperature, 70, 75, 0, 255);
+    g = 255;
+    b = 0;
+  } else {
+    r = 255;
+    g = max(0, map(temperature, 75, 85, 255, 0));
+    b = 0;
+  }
+
+  return _strip.Color(r, g, b);
 }
 
 void LedStrip::_layerOnEffect(int i) {

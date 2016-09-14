@@ -161,6 +161,10 @@ int recalibrate(String input) {
   return 1;
 }
 
+int temperature(String input) {
+  return lights.temperature(input);
+}
+
 void loop() {
   if (shouldRecalibrate) {
     shouldRecalibrate = false;
