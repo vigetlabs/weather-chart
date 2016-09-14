@@ -25,7 +25,16 @@ boolean dirRegister[8];
 boolean stepRegister[8];
 
 bool calibrated[6] = {false, false, false, false, false, false};
+bool shouldRecalibrate = false;
 
+int oldState[6]     = {
+  map(5, 0, 100, 0, STEP_COUNT),
+  map(5, 0, 100, 0, STEP_COUNT),
+  map(5, 0, 100, 0, STEP_COUNT),
+  map(5, 0, 100, 0, STEP_COUNT),
+  map(5, 0, 100, 0, STEP_COUNT),
+  map(5, 0, 100, 0, STEP_COUNT)
+};
 int currentState[6] = {0, 0, 0, 0, 0, 0};
 int targetState[6]  = {0, 0, 0, 0, 0, 0};
 
@@ -58,6 +67,7 @@ void setup() {
   Particle.function("trigger", trigger);
   Particle.function("addEffect", addEffect);
   Particle.function("clear", clearEffects);
+  Particle.function("calibrate", recalibrate);
 
   deactivateSteppers();
   calibrate();
@@ -72,7 +82,7 @@ void calibrate() {
         if (buttonPressed(i)) {
           calibrated[i]   = true;
           currentState[i] = 0;
-          targetState[i]  = map(5, 0, 100, 0, STEP_COUNT);
+          targetState[i]  = oldState[i];
         } else {
           targetState[i] -= 1;
         }
@@ -140,7 +150,23 @@ int clearEffects(String input) {
   return 1;
 }
 
+int recalibrate(String input) {
+  for (int i = 0; i < 6; i++) {
+    calibrated[i] = false;
+    oldState[i]   = currentState[i];
+  }
+
+  shouldRecalibrate = true;
+
+  return 1;
+}
+
 void loop() {
+  if (shouldRecalibrate) {
+    shouldRecalibrate = false;
+    calibrate();
+  }
+
   determineState();
   display();
 }
