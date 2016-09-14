@@ -17,7 +17,7 @@ class LedStrip
     LedStrip(int stepCount);
     void initialize();
     int  addEffect(String input);
-    int  temperature(String input);
+    void temperature(String input);
     void clearEffects();
     void updatePositions(int stepperState[]);
     void updateState();
@@ -26,7 +26,7 @@ class LedStrip
   private:
     int _stepCount       = 0;
     int _positions[6]    = {0, 0, 0, 0, 0, 0};
-    int _temperatures[6] = {0, 0, 0, 0, 0, 0};
+    int _temperatures[6] = {87, 80, 71, 64, 56, 45};
 
     Effect _effects[EFFECT_COUNT];
     int _effectCount = 0;

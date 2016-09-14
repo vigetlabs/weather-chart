@@ -42,7 +42,7 @@ int LedStrip::addEffect(String input) {
   return checksum;
 }
 
-int LedStrip::temperature(String input) {
+void LedStrip::temperature(String input) {
   int checksum  = 0;
   int index     = 0;
   int lastIndex = 0;
@@ -53,7 +53,7 @@ int LedStrip::temperature(String input) {
 
     if (index == -1) {
       if (i != 5) {
-        return -1;
+        return;
       }
       index = input.length();
     }
@@ -64,8 +64,6 @@ int LedStrip::temperature(String input) {
 
     lastIndex = index + 1;
   }
-
-  return checksum;
 }
 
 void LedStrip::clearEffects() {
@@ -95,7 +93,7 @@ void LedStrip::updateState() {
   for (size_t i = 0; i < LED_COUNT; i++) {
     _targetState[i] = 0;
 
-    if (i <= _positions[5]) {
+    if (i < _positions[5]) {
       _calculateTemperature(i);
     }
   }

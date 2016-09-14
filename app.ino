@@ -107,6 +107,12 @@ bool buttonPressed(int i) {
 }
 
 int trigger(String input) {
+  int splitter         = input.indexOf(";");
+  String tempInput     = input.substring(splitter + 1);
+  String positionInput = input.substring(0, splitter);
+
+  lights.temperature(tempInput);
+
   newTarget = true;
 
   int checksum  = 0;
@@ -115,7 +121,7 @@ int trigger(String input) {
   int value;
 
   for (int i = 0; i < 6; i++) {
-    int index = input.indexOf(",", lastIndex);
+    int index = positionInput.indexOf(",", lastIndex);
 
     if (index == -1) {
       if (i != 5) {
@@ -125,10 +131,10 @@ int trigger(String input) {
         }
         return -1;
       }
-      index = input.length();
+      index = positionInput.length();
     }
 
-    value           = atoi(input.substring(lastIndex, index));
+    value           = atoi(positionInput.substring(lastIndex, index));
     value           = max(0,   value);
     value           = min(100, value);
     targetState[i]  = map(value, 0, 100, 0, STEP_COUNT);
@@ -159,10 +165,6 @@ int recalibrate(String input) {
   shouldRecalibrate = true;
 
   return 1;
-}
-
-int temperature(String input) {
-  return lights.temperature(input);
 }
 
 void loop() {
