@@ -59,13 +59,11 @@ void setup() {
   Particle.function("addEffect", addEffect);
   Particle.function("clear", clearEffects);
 
-  activated = false;
   deactivateSteppers();
   calibrate();
 }
 
 void calibrate() {
-  activated = true;
   activateSteppers();
 
   while(uncalibrated()) {
@@ -163,8 +161,6 @@ void determineState() {
     }
   } else {
     if (activated) {
-      delay(1000);
-      activated = false;
       shouldDeactivate = true;
     }
   }
@@ -176,7 +172,6 @@ void determineState() {
 void display() {
   if (shouldActivate) {
     shouldActivate = false;
-    activated = true;
     activateSteppers();
     determineDirections();
   }
@@ -233,11 +228,15 @@ void moveTowardsTarget() {
 }
 
 void activateSteppers() {
+  activated = true;
+
   setDir(7, HIGH);
   writeDirRegister();
 }
 
 void deactivateSteppers() {
+  activated = false;
+
   setDir(7, LOW);
   writeDirRegister();
 }
