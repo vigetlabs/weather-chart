@@ -1,11 +1,11 @@
+#include "LocationServo.h"
 #include "LedStrip.h"
-
-// Don't need this here but Particle IDE complains if it's not here.
 #include "Effect.h"
 
 #define STEP_COUNT (4450 * 4)
 
 LedStrip lights = LedStrip(STEP_COUNT);
+LocationServo locationServo;
 
 int  currentLastLed = 0;
 bool shouldShowLeds = false;
@@ -107,9 +107,26 @@ bool buttonPressed(int i) {
 }
 
 int trigger(String input) {
-  int splitter         = input.indexOf(";");
-  String tempInput     = input.substring(splitter + 1);
-  String positionInput = input.substring(0, splitter);
+  int firstSplitter    = input.indexOf(";");
+  int secondSplitter   = input.indexOf(";", firstSplitter + 1);
+
+  String positionInput = input.substring(0, firstSplitter);
+  String tempInput     = input.substring(firstSplitter + 1, secondSplitter);
+  String locationInput;
+
+  if (secondSplitter != -1) {
+    locationInput = input.substring(secondSplitter + 1);
+    locationServo.setLocation(locationInput);
+  }
+
+  Serial.print("secondSplitter: ");
+  Serial.println(secondSplitter);
+  Serial.print("positionInput: ");
+  Serial.println(positionInput);
+  Serial.print("tempInput:     ");
+  Serial.println(tempInput);
+  Serial.print("locationInput: ");
+  Serial.println(locationInput);
 
   lights.temperature(tempInput);
 
@@ -199,6 +216,7 @@ void determineState() {
 
   lights.updatePositions(currentState);
   lights.updateState();
+  locationServo.updateState(millis());
 }
 
 void display() {
@@ -219,6 +237,7 @@ void display() {
   }
 
   lights.show();
+  locationServo.show();
 }
 
 bool targetDifferent() {
