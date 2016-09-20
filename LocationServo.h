@@ -6,7 +6,7 @@
 
 #define SERVO_PIN D1
 
-#define LEFT_POSITION 10
+#define LEFT_POSITION 16
 
 #define MOVE_MULTIPLIER 40 // the higher this is, the slower the thing moves
 #define POSITION_GAP 40

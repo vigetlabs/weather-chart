@@ -13,13 +13,13 @@ void LocationServo::setLocation(String location) {
   if (location.length() == 0) {
     return;
   } else if (location == "1") {
-    newPosition = LEFT_POSITION;
+    newPosition = 16;
   } else if (location == "2") {
-    newPosition = LEFT_POSITION + (1 * POSITION_GAP);
+    newPosition = 60;
   } else if (location == "3") {
-    newPosition = LEFT_POSITION + (2 * POSITION_GAP);
+    newPosition = 113;
   } else if (location == "4") {
-    newPosition = LEFT_POSITION + (3 * POSITION_GAP);
+    newPosition = 161;
   }
 
   _startTime = _currentTime;
