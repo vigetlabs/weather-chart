@@ -168,13 +168,13 @@ uint32_t LedStrip::_tempToColor(int temperature) {
     g = 0;
     b = map(temperature, 40, 50, 150, 255);
   } else if (temperature <= 60) {
-    r = map(temperature, 40, 60, 255, 0);
+    r = map(temperature, 50, 60, 255, 0);
     g = 0;
     b = 255;
   } else if (temperature <= 70) {
     r = 0;
-    g = map(temperature, 50, 70, 0, 255);
-    b = map(temperature, 50, 70, 255, 0);
+    g = map(temperature, 60, 70, 0, 255);
+    b = map(temperature, 60, 70, 255, 0);
   } else if (temperature <= 75) {
     r = map(temperature, 70, 75, 0, 255);
     g = 255;
